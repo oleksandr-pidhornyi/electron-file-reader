@@ -3,6 +3,7 @@ const fs = require('fs');
 
 const { ipcRenderer } = electron;
 
+// returning data to IPC
 function sendDeepScanResult(payload) {
   ipcRenderer.send('worker-deep-scan-directory', {
     payload,
@@ -23,7 +24,10 @@ function isUnixHiddenPath(pathToTest) {
   // eslint-disable-next-line prettier/prettier, no-useless-escape
   return (/(^|\/)\.[^\/\.]/g).test(pathToTest);
 }
-
+/**
+ * This function prepares the file information to be sent to the front end
+ * @return a pretty descriprion of a file
+ */
 function describeFile(statsObj, name, dirPath, directorySize) {
   return {
     name,
@@ -33,6 +37,10 @@ function describeFile(statsObj, name, dirPath, directorySize) {
   };
 }
 
+/**
+ * This function prepares the directory information to be sent to the front end
+ * @return a pretty descriprion of a directory
+ */
 function describeDirectory(statsObj, name, dirPath, nestedSize = null) {
   const res = {
     name,
@@ -45,6 +53,14 @@ function describeDirectory(statsObj, name, dirPath, nestedSize = null) {
   return res;
 }
 
+/**
+ * This function contains the main logic of scanning the file system.
+ * Scan coule be recursive or not based on parameters
+ * @param  {string} dirPath path of the directory to scan
+ * @param  {boolean} multiLevelScan whether to do a full recursive scan (might take some time), or shallow one-level scan (should be quick)
+ * @param  {boolean} justCountSize this is set to true when recursively scanning. Will return simplified result
+ * @return {} returns either a simplified count (when in recursive mode), or a full response otherwise
+ */
 async function scanDirectory(
   dirPath,
   multiLevelScan = false,
@@ -99,6 +115,8 @@ async function scanDirectory(
   };
 }
 
+// **** setting up IPC listeners
+
 ipcRenderer.on('worker-deep-scan-directory', (event, args) => {
   const path = args;
   scanDirectory(path, true, false)
@@ -107,7 +125,6 @@ ipcRenderer.on('worker-deep-scan-directory', (event, args) => {
       return data;
     })
     .catch((err) => {
-      console.log('err', err);
       sendShallowScanResult({ path, err });
     });
 });

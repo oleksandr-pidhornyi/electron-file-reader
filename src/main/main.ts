@@ -25,12 +25,18 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+
+// this one will do the heavy lifting
 let workerWindow: BrowserWindow | null = null;
+
+// ******* Setting up IPC listeners and interaction chain */
 
 ipcMain.on('get-directory', async (event, arg) => {
   // eslint-disable-next-line promise/catch-or-return
   dialog.showOpenDialog({ properties: ['openDirectory'] }).then((data) => {
-    event.reply('get-directory', data);
+    if (!data.canceled) {
+      event.reply('get-directory', data);
+    }
   });
 });
 
@@ -53,19 +59,19 @@ ipcMain.on('worker-deep-scan-directory', (event, arg) => {
   const { payload } = arg;
   if (payload.err) {
     showErrorMessage(payload.err.toString(), payload.path);
-  } else {
-    mainWindow?.webContents.send('deep-scan-directory', payload);
   }
+  mainWindow?.webContents.send('deep-scan-directory', payload);
 });
 
 ipcMain.on('worker-shallow-scan-directory', (event, arg) => {
   const { payload } = arg;
   if (payload.err) {
     showErrorMessage(payload.err.toString(), payload.path);
-  } else {
-    mainWindow?.webContents.send('shallow-scan-directory', payload);
   }
+  mainWindow?.webContents.send('shallow-scan-directory', payload);
 });
+
+// ******* Done setting up, below mostly boilerplate */
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -142,6 +148,7 @@ const createWindow = async () => {
     return { action: 'deny' };
   });
 
+  // ********** one addition to boilerplate - a web worker to scan the file system
   workerWindow = new BrowserWindow({
     show: false,
     webPreferences: {

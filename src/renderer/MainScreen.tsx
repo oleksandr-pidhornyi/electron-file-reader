@@ -51,7 +51,7 @@ class MainScreen extends React.Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
     this.state = {
-      currentDirectory: '/Users/oleksandrpidhornyi/Desktop/test1',
+      currentDirectory: '',
       contents: {
         directories: [],
         files: [],
@@ -87,6 +87,9 @@ class MainScreen extends React.Component<IProps, IState> {
       'deep-scan-directory',
       (arg: ScanDirectoryResult) => {
         if (arg.err) {
+          this.setState({
+            extraLoading: false,
+          });
           console.error(arg.err);
           return;
         }
@@ -104,6 +107,16 @@ class MainScreen extends React.Component<IProps, IState> {
       'shallow-scan-directory',
       (arg: ScanDirectoryResult) => {
         if (arg.err) {
+          this.setState({
+            contents: {
+              directories: [],
+              files: [],
+              lastModified: null,
+              name: '',
+            },
+            loading: false,
+            extraLoading: false,
+          });
           console.error(arg.err);
           return;
         }
@@ -116,21 +129,6 @@ class MainScreen extends React.Component<IProps, IState> {
         }
       }
     );
-    // ***************** REMOVE THIS
-    const filePath = '/Users/oleksandrpidhornyi/Downloads';
-    this.setState({
-      currentDirectory: filePath,
-      contents: {
-        directories: [],
-        files: [],
-        lastModified: null,
-        name: '',
-      },
-      loading: true,
-      extraLoading: true,
-    });
-    window.electron.ipcRenderer.sendMessage('deep-scan-directory', [filePath]);
-    window.electron.ipcRenderer.sendMessage('shallow-scan-directory', [filePath]);
   }
 
   static handleClick() {
@@ -142,7 +140,7 @@ class MainScreen extends React.Component<IProps, IState> {
       <tbody>
         {data.map((item) => {
           return (
-            <tr>
+            <tr key={item.name}>
               <td>{item.type}</td>
               <td>{item.name}</td>
               <td>{MainScreen.resolveSizeLabel(item.size)}</td>
