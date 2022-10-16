@@ -42,14 +42,29 @@ ipcMain.on('shallow-scan-directory', async (event, arg) => {
   workerWindow?.webContents.send('worker-shallow-scan-directory', arg[0]);
 });
 
+function showErrorMessage(message: string, path: string) {
+  dialog.showErrorBox(
+    "Sorry, there's been an error :( ",
+    `Can't open file ${path}: ${message}`
+  );
+}
+
 ipcMain.on('worker-deep-scan-directory', (event, arg) => {
   const { payload } = arg;
-  mainWindow?.webContents.send('deep-scan-directory', payload);
+  if (payload.err) {
+    showErrorMessage(payload.err.toString(), payload.path);
+  } else {
+    mainWindow?.webContents.send('deep-scan-directory', payload);
+  }
 });
 
 ipcMain.on('worker-shallow-scan-directory', (event, arg) => {
   const { payload } = arg;
-  mainWindow?.webContents.send('shallow-scan-directory', payload);
+  if (payload.err) {
+    showErrorMessage(payload.err.toString(), payload.path);
+  } else {
+    mainWindow?.webContents.send('shallow-scan-directory', payload);
+  }
 });
 
 if (process.env.NODE_ENV === 'production') {

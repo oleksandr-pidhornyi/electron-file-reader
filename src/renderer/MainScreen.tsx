@@ -31,6 +31,10 @@ class MainScreen extends React.Component {
       window.electron.ipcRenderer.sendMessage('shallow-scan-directory', [filePath]);
     });
     window.electron.ipcRenderer.on('deep-scan-directory', (arg) => {
+      if (arg.err) {
+        console.error(arg.err);
+        return;
+      }
       const { currentDirectory, extraLoading } = this.state;
       if (extraLoading && currentDirectory === arg.path) {
         this.setState({
@@ -41,6 +45,10 @@ class MainScreen extends React.Component {
       }
     });
     window.electron.ipcRenderer.on('shallow-scan-directory', (arg) => {
+      if (arg.err) {
+        console.error(arg.err);
+        return;
+      }
       const { currentDirectory, loading } = this.state;
       if (loading && currentDirectory === arg.path) {
         this.setState({

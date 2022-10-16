@@ -107,7 +107,8 @@ ipcRenderer.on('worker-deep-scan-directory', (event, args) => {
       return data;
     })
     .catch((err) => {
-      // TODO
+      console.log('err', err);
+      sendShallowScanResult({ path, err });
     });
 });
 
@@ -119,6 +120,6 @@ ipcRenderer.on('worker-shallow-scan-directory', (event, args) => {
       return data;
     })
     .catch((err) => {
-      // TODO
+      sendShallowScanResult({ path, err });
     });
 });
