@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import React, { MouseEventHandler } from 'react';
 import './App.css';
+import { Table, resolveSizeLabel } from './Table';
 
 const SIZE_LABELS = ['B', 'KB', 'MB', 'GB', 'TB'];
 
@@ -9,14 +10,14 @@ interface IProps {}
 
 interface IState {
   currentDirectory?: string;
-  contents: ScanDirectoryData;
+  contents?: ScanDirectoryData;
   loading: boolean;
   extraLoading: boolean;
 }
 
-type GetDirectoryResult = {
-  canceled: boolean;
-  filePaths: string[];
+export type GetDirectoryResult = {
+  canceled?: boolean;
+  filePaths?: string[];
 };
 
 type ScanDirectoryData = {
@@ -28,26 +29,13 @@ type ScanDirectoryData = {
   totalSize?: number;
 };
 
-type ScanDirectoryResult = {
-  err: string;
-  path: string;
-  data: ScanDirectoryData;
+export type ScanDirectoryResult = {
+  err?: string;
+  path?: string;
+  data?: ScanDirectoryData;
 };
 
 class MainScreen extends React.Component<IProps, IState> {
-  static resolveSizeLabel(size: number | undefined) {
-    if (!size) return '...';
-    let sizeLabel = 0;
-    let newSize = size;
-    const denominator = 1024;
-    while (newSize > denominator) {
-      sizeLabel += 1;
-      newSize /= denominator;
-    }
-    const res = `${Math.floor(newSize)} ${SIZE_LABELS[sizeLabel]}`;
-    return res;
-  }
-
   constructor(props: IProps) {
     super(props);
     this.state = {
@@ -64,10 +52,10 @@ class MainScreen extends React.Component<IProps, IState> {
   }
 
   componentDidMount(): void {
-    window.electron.ipcRenderer.on(
+    window.electron?.ipcRenderer.on(
       'get-directory',
       (arg: GetDirectoryResult) => {
-        const filePath = arg?.filePaths[0];
+        const filePath = arg?.filePaths && arg?.filePaths[0];
         this.setState({
           currentDirectory: filePath,
           contents: {
@@ -79,11 +67,15 @@ class MainScreen extends React.Component<IProps, IState> {
           loading: true,
           extraLoading: true,
         });
-        window.electron.ipcRenderer.sendMessage('deep-scan-directory', [filePath]);
-        window.electron.ipcRenderer.sendMessage('shallow-scan-directory', [filePath]);
+        window.electron.ipcRenderer.sendMessage('deep-scan-directory', [
+          filePath,
+        ]);
+        window.electron.ipcRenderer.sendMessage('shallow-scan-directory', [
+          filePath,
+        ]);
       }
     );
-    window.electron.ipcRenderer.on(
+    window.electron?.ipcRenderer.on(
       'deep-scan-directory',
       (arg: ScanDirectoryResult) => {
         if (arg.err) {
@@ -103,7 +95,7 @@ class MainScreen extends React.Component<IProps, IState> {
         }
       }
     );
-    window.electron.ipcRenderer.on(
+    window.electron?.ipcRenderer.on(
       'shallow-scan-directory',
       (arg: ScanDirectoryResult) => {
         if (arg.err) {
@@ -135,35 +127,18 @@ class MainScreen extends React.Component<IProps, IState> {
     window.electron.ipcRenderer.sendMessage('get-directory', []);
   }
 
-  static getTableBodyAsReactElement(data: any[]) {
-    return !data ? null : (
-      <tbody>
-        {data.map((item) => {
-          return (
-            <tr key={item.name}>
-              <td>{item.type}</td>
-              <td>{item.name}</td>
-              <td>{MainScreen.resolveSizeLabel(item.size)}</td>
-              <td>{item.lastModified?.toLocaleDateString()}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    );
-  }
-
   render() {
     const { currentDirectory, contents, extraLoading } = this.state;
-    const lastModified = contents.lastModified?.toLocaleDateString();
+    const lastModified = contents?.lastModified?.toLocaleDateString();
     const totalSizeLabel = extraLoading
       ? 'loading...'
-      : MainScreen.resolveSizeLabel(contents.totalSize);
-    const totalFilesLabel = extraLoading ? 'loading...' : contents.numOfFiles;
+      : resolveSizeLabel(contents?.totalSize);
+    const totalFilesLabel = extraLoading ? 'loading...' : contents?.numOfFiles;
     let data: any[] = [];
-    if (contents.directories && contents.files) {
+    if (contents?.directories && contents.files) {
       data = [...contents.directories, ...contents.files];
     }
-    const table = MainScreen.getTableBodyAsReactElement(data);
+    const table = <Table data={data} />;
     return (
       <div className="main-container">
         <div className="folder-info-container">
