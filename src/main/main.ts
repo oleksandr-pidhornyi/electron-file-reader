@@ -14,11 +14,7 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import fs from 'fs';
 import MenuBuilder from './menu';
-import {
-  resolveHtmlPath,
-  scanDirectoryInitial,
-  buildDirectoryScanResult,
-} from './util';
+import { resolveHtmlPath } from './util';
 
 class AppUpdater {
   constructor() {
@@ -29,17 +25,33 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let workerWindow: BrowserWindow | null = null;
 
 ipcMain.on('get-directory', async (event, arg) => {
   // eslint-disable-next-line promise/catch-or-return
   dialog.showOpenDialog({ properties: ['openDirectory'] }).then((data) => {
-    console.log(data, fs);
     event.reply('get-directory', data);
   });
 });
 
-ipcMain.on('scan-directory', async (event, arg) => {
-  event.reply('scan-directory', await scanDirectoryInitial(arg[0]));
+ipcMain.on('deep-scan-directory', async (event, arg) => {
+  console.log('here', arg);
+  workerWindow?.webContents.send('worker-deep-scan-directory', arg[0]);
+});
+
+ipcMain.on('shallow-scan-directory', async (event, arg) => {
+  workerWindow?.webContents.send('worker-shallow-scan-directory', arg[0]);
+});
+
+ipcMain.on('worker-deep-scan-directory', (event, arg) => {
+  const { payload } = arg;
+  console.log('sending', payload);
+  mainWindow?.webContents.send('deep-scan-directory', payload);
+});
+
+ipcMain.on('worker-shallow-scan-directory', (event, arg) => {
+  const { payload } = arg;
+  mainWindow?.webContents.send('shallow-scan-directory', payload);
 });
 
 if (process.env.NODE_ENV === 'production') {
@@ -66,7 +78,6 @@ const installExtensions = async () => {
     )
     .catch(console.log);
 };
-
 const createWindow = async () => {
   if (isDebug) {
     await installExtensions();
@@ -92,7 +103,7 @@ const createWindow = async () => {
     },
   });
 
-  mainWindow.loadURL(resolveHtmlPath('index.html'));
+  mainWindow.loadURL(resolveHtmlPath('index.html', 'renderer'));
 
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
@@ -118,6 +129,19 @@ const createWindow = async () => {
     return { action: 'deny' };
   });
 
+  workerWindow = new BrowserWindow({
+    // show: false,
+    webPreferences: {
+      nodeIntegrationInWorker: true,
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
+  });
+  workerWindow.loadURL(resolveHtmlPath('index.html', 'worker', false));
+
+  workerWindow.on('closed', () => {
+    workerWindow = null;
+  });
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
   new AppUpdater();

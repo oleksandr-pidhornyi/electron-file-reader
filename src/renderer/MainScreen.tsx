@@ -8,26 +8,58 @@ class MainScreen extends React.Component {
   constructor() {
     super();
     this.state = {
-      currentDirectory: '',
+      currentDirectory: '/Users/oleksandrpidhornyi/Desktop/test1',
       contents: {},
+      loading: false,
+      extraLoading: false,
     };
 
     this.handleClick = this.handleClick.bind(this);
-    this.resolveSize = this.resolveSize.bind(this);
+    this.resolveSizeLabel = this.resolveSizeLabel.bind(this);
   }
 
   componentDidMount(): void {
     window.electron.ipcRenderer.on('get-directory', (arg) => {
       const filePath = arg?.filePaths[0];
-      this.setState({ currentDirectory: filePath, contents: {} });
-      window.electron.ipcRenderer.sendMessage('scan-directory', [filePath]);
+      this.setState({
+        currentDirectory: filePath,
+        contents: {},
+        loading: true,
+        extraLoading: true,
+      });
+      window.electron.ipcRenderer.sendMessage('deep-scan-directory', [filePath]);
+      window.electron.ipcRenderer.sendMessage('shallow-scan-directory', [filePath]);
     });
-    window.electron.ipcRenderer.on('scan-directory', (arg) => {
-      this.setState({ contents: arg });
+    window.electron.ipcRenderer.on('deep-scan-directory', (arg) => {
+      const { currentDirectory, extraLoading } = this.state;
+      console.log('deep-scan-directory', arg, extraLoading);
+      if (extraLoading && currentDirectory === arg.path) {
+        this.setState({
+          contents: arg.data,
+          loading: false,
+          extraLoading: false,
+        });
+      }
     });
-    window.electron.ipcRenderer.sendMessage('scan-directory', [
-      '/Users/oleksandrpidhornyi/Desktop/test1',
-    ]);
+    window.electron.ipcRenderer.on('shallow-scan-directory', (arg) => {
+      const { currentDirectory, loading } = this.state;
+      if (loading && currentDirectory === arg.path) {
+        this.setState({
+          contents: arg.data,
+          loading: false,
+        });
+      }
+    });
+
+    const filePath = '/Users/oleksandrpidhornyi/Downloads';
+    this.setState({
+      currentDirectory: filePath,
+      contents: {},
+      loading: true,
+      extraLoading: true,
+    });
+    window.electron.ipcRenderer.sendMessage('deep-scan-directory', [filePath]);
+    window.electron.ipcRenderer.sendMessage('shallow-scan-directory', [filePath]);
   }
 
   handleClick() {
@@ -40,8 +72,9 @@ class MainScreen extends React.Component {
         {data.map((item) => {
           return (
             <tr>
+              <td>{item.type}</td>
               <td>{item.name}</td>
-              <td>{this.resolveSize(item.size)}</td>
+              <td>{this.resolveSizeLabel(item.size)}</td>
               <td>{item.lastModified?.toLocaleDateString()}</td>
             </tr>
           );
@@ -50,7 +83,7 @@ class MainScreen extends React.Component {
     );
   }
 
-  resolveSize(size) {
+  resolveSizeLabel(size) {
     if (!size) return '';
     let sizeLabel = 0;
     let newSize = size;
@@ -66,7 +99,9 @@ class MainScreen extends React.Component {
 
   render() {
     const { currentDirectory, contents } = this.state;
+    console.log('contents', contents);
     const lastModified = contents.lastModified?.toLocaleDateString();
+    const totalSizeLabel = this.resolveSizeLabel(contents.totalSize);
     let data = [];
     if (contents.directories && contents.files) {
       data = [...contents.directories, ...contents.files];
@@ -80,6 +115,7 @@ class MainScreen extends React.Component {
             <table className="table">
               <thead>
                 <tr>
+                  <th>Type</th>
                   <th>Name</th>
                   <th>Size</th>
                   <th>Last modified</th>
@@ -89,7 +125,7 @@ class MainScreen extends React.Component {
             </table>
           </div>
           <div className="bar bottom-bar">
-            <div>Total size: {contents.totalSize}</div>
+            <div>Total size: {totalSizeLabel}</div>
             <div>Last Modified: {lastModified}</div>
           </div>
         </div>

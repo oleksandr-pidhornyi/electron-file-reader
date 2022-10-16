@@ -1,6 +1,9 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
-export type Channels = 'get-directory' | 'scan-directory';
+export type Channels =
+  | 'get-directory'
+  | 'deep-scan-directory'
+  | 'shallow-scan-directory';
 
 contextBridge.exposeInMainWorld('electron', {
   ipcRenderer: {
