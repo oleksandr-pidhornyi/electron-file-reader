@@ -42,10 +42,10 @@ ipcMain.on('shallow-scan-directory', async (event, arg) => {
   workerWindow?.webContents.send('worker-shallow-scan-directory', arg[0]);
 });
 
-function showErrorMessage(message: string, path: string) {
+function showErrorMessage(message: string, errorPath: string) {
   dialog.showErrorBox(
     "Sorry, there's been an error :( ",
-    `Can't open file ${path}: ${message}`
+    `Can't open file ${errorPath}: ${message}`
   );
 }
 
