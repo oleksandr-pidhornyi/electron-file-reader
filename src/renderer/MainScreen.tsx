@@ -32,7 +32,6 @@ class MainScreen extends React.Component {
     });
     window.electron.ipcRenderer.on('deep-scan-directory', (arg) => {
       const { currentDirectory, extraLoading } = this.state;
-      console.log('deep-scan-directory', arg, extraLoading);
       if (extraLoading && currentDirectory === arg.path) {
         this.setState({
           contents: arg.data,
@@ -84,7 +83,7 @@ class MainScreen extends React.Component {
   }
 
   resolveSizeLabel(size) {
-    if (!size) return '';
+    if (!size) return '...';
     let sizeLabel = 0;
     let newSize = size;
     const denominator = 1024;
@@ -93,15 +92,16 @@ class MainScreen extends React.Component {
       newSize /= denominator;
     }
     const res = `${Math.floor(newSize)} ${SIZE_LABELS[sizeLabel]}`;
-    console.log(res);
     return res;
   }
 
   render() {
-    const { currentDirectory, contents } = this.state;
-    console.log('contents', contents);
+    const { currentDirectory, contents, extraLoading } = this.state;
     const lastModified = contents.lastModified?.toLocaleDateString();
-    const totalSizeLabel = this.resolveSizeLabel(contents.totalSize);
+    const totalSizeLabel = extraLoading
+      ? 'loading...'
+      : this.resolveSizeLabel(contents.totalSize);
+    const totalFilesLabel = extraLoading ? 'loading...' : contents.numOfFiles;
     let data = [];
     if (contents.directories && contents.files) {
       data = [...contents.directories, ...contents.files];
@@ -110,19 +110,24 @@ class MainScreen extends React.Component {
     return (
       <div className="main-container">
         <div className="folder-info-container">
-          <div className="bar top-bar">{currentDirectory}</div>
+          <div className="bar top-bar">
+            <div>{currentDirectory}</div>
+            <div>Total files: {totalFilesLabel}</div>
+          </div>
           <div className="table-content">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Type</th>
-                  <th>Name</th>
-                  <th>Size</th>
-                  <th>Last modified</th>
-                </tr>
-              </thead>
-              {table}
-            </table>
+            <div className="nested-container">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Size</th>
+                    <th>Last modified</th>
+                  </tr>
+                </thead>
+                {table}
+              </table>
+            </div>
           </div>
           <div className="bar bottom-bar">
             <div>Total size: {totalSizeLabel}</div>

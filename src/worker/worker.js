@@ -54,20 +54,26 @@ async function scanDirectory(
   const files = [];
   const directories = [];
   let totalSize = 0;
+  let numOfFiles = 0;
   for (let i = 0; i < contents.length; i += 1) {
     const el = contents[i];
     const elPath = `${dirPath}/${el}`;
     const statsObj = fs.statSync(elPath);
     if (statsObj.isFile()) {
       totalSize += statsObj.size;
-      if (!justCountSize && !isUnixHiddenPath(el)) {
-        files.push(describeFile(statsObj, el, dirPath));
+      if (!isUnixHiddenPath(el)) {
+        if (!justCountSize) {
+          files.push(describeFile(statsObj, el, dirPath));
+        }
+        numOfFiles += 1;
       }
     } else if (statsObj.isDirectory()) {
       let directorySize = -1;
       if (multiLevelScan) {
-        directorySize = await scanDirectory(elPath, true, true);
+        const directoryScan = await scanDirectory(elPath, true, true);
+        directorySize = directoryScan.size;
         totalSize += directorySize;
+        numOfFiles += directoryScan.numOfFiles;
       }
       if (!justCountSize) {
         directories.push(
@@ -76,24 +82,27 @@ async function scanDirectory(
       }
     }
   }
-  if (justCountSize) return totalSize;
+  if (justCountSize)
+    return {
+      size: totalSize,
+      numOfFiles,
+    };
 
   const dirStatsObj = fs.statSync(dirPath);
   return {
     name: dirPath,
-    files,
-    directories,
+    files: files.sort((a, b) => b.size - a.size),
+    directories: directories.sort((a, b) => (b.size || 0) - (a.size || 0)),
     totalSize,
+    numOfFiles,
     lastModified: dirStatsObj.mtime,
   };
 }
 
 ipcRenderer.on('worker-deep-scan-directory', (event, args) => {
   const path = args;
-  console.log('deep scan', path);
   scanDirectory(path, true, false)
     .then((data) => {
-      console.log('deep scan done', data);
       sendDeepScanResult({ path, data });
       return data;
     })

@@ -35,7 +35,6 @@ ipcMain.on('get-directory', async (event, arg) => {
 });
 
 ipcMain.on('deep-scan-directory', async (event, arg) => {
-  console.log('here', arg);
   workerWindow?.webContents.send('worker-deep-scan-directory', arg[0]);
 });
 
@@ -45,7 +44,6 @@ ipcMain.on('shallow-scan-directory', async (event, arg) => {
 
 ipcMain.on('worker-deep-scan-directory', (event, arg) => {
   const { payload } = arg;
-  console.log('sending', payload);
   mainWindow?.webContents.send('deep-scan-directory', payload);
 });
 
@@ -130,7 +128,7 @@ const createWindow = async () => {
   });
 
   workerWindow = new BrowserWindow({
-    // show: false,
+    show: false,
     webPreferences: {
       nodeIntegrationInWorker: true,
       nodeIntegration: true,
