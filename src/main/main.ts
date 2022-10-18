@@ -157,7 +157,7 @@ const createWindow = async () => {
       contextIsolation: false,
     },
   });
-  workerWindow.loadURL(resolveHtmlPath('index.html', 'worker', false));
+  workerWindow.loadURL(resolveHtmlPath('indexWorker.html', 'worker', false));
 
   workerWindow.on('closed', () => {
     workerWindow = null;

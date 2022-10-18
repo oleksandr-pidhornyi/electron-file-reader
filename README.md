@@ -26,6 +26,12 @@ npm run build:renderer
 npm test
 ```
 
+To build for prod
+```bash
+npm run package
+```
+Binaries will be in release/build directory
+
 ## How does it work?
 The app is build using `electron` framework. For communication between threads it uses proper and secure (hopefully) `IPC` channels, and it uses `Web Workers` to scan the file system asynchronously to avoid freezing up of the UI. <br><br>
 The back-end supports two types of directory scan - `shallow` and `deep`. <br>`Shallow` only returns the contents of the directory, and is meant to quickly populate the front-end. <br>
