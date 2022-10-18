@@ -40,9 +40,7 @@ The back-end supports two types of directory scan - `shallow` and `deep`. <br>`S
 The front-end requests both scans at the same time, to minimize the delay for the user. As a result, the file list is populated almost instantly, while some other parameters have to wait for the deep scan to finish.
 <br><br>
 ## What's missing?
-This project is not entirely production ready, unfortunately. I was having hard time getting it compiled for production, and since I'm not super experienced with Electron, it would be a deep dive for me to understand why the production build is failing.
-
-Also I'm not happy with the tests that I made. I'm not exactly sure how to mock `IPC` requests for integration testing, and also couldn't test the Web Worker code because importing it seemed tricky. My `node.js` testing skills are rusty.
+I'm not happy with the tests that I made. I'm not exactly sure how to mock `IPC` requests for integration testing, and also couldn't test the Web Worker code because importing it seemed tricky. My `node.js` testing skills are rusty.
 <br>
 <br>
 
